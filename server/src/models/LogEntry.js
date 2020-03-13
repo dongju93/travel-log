@@ -22,22 +22,22 @@ const logEntrySchema = new Schema({
       default: 0
    },
    latitude: {
-      numberRequired,
+      ...numberRequired,
       min: -90,
       max: 90
    },
    longitude: {
-      numberRequired,
+      ...numberRequired,
       min: -180,
       max: 180
    },
    visitDate: {
       type: Date,
       required: true
+   }}, {
+      timestamps: true
    }
-}, {
-   timestamps: true
-});
+);
 
 const LogEntry = mongoose.model('LogEntry', logEntrySchema);
 

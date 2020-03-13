@@ -12,6 +12,7 @@ const logs = require('./api/logs');
 
 mongoose.connect(process.env.DATABASE_URL, {
    useNewUrlParser: true,
+   useUnifiedTopology: true
 });
 
 const app = express();
@@ -24,6 +25,8 @@ app.use(helmet());
 app.use(cors({
    origin: process.env.CORS_ORIGIN,
 }));
+// body-parsing middleware only for json
+app.use(express.json());
 
 app.get('/', (req, res) => {
    res.json({
