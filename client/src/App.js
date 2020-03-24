@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import ReactMapGL, { Marker, Popup } from 'react-map-gl';
 import { listLogEntries } from './API';
+import LogEntryForm from './LogEntryForm';
 
 const App = () => {
   const [logEntries, setLogEntries] = useState([]);
   const [showPopup, setShowPopup] = useState({});
+  const [addEntryLocation, setAddEntryLocation] = useState(null);
   const [viewport, setViewport] = useState({
     width: '100vw',
     height: '100vh',
@@ -13,24 +15,36 @@ const App = () => {
     zoom: 10
   });
 
+  const getEntries = async () => {
+    const logEntries = await listLogEntries();
+    setLogEntries(logEntries);
+  }
+
   useEffect(() => {
-    (async () => {
-      const logEntries = await listLogEntries();
-      setLogEntries(logEntries);
-    })();
+    getEntries();
   }, []);
+
+  // when double click triger this event
+  const showAddMarkerPopup = (event) => {
+    const [longitude, latitude] = event.lngLat;
+    setAddEntryLocation({
+      latitude,
+      longitude,
+    });
+  };
 
   return (
     <ReactMapGL
       {...viewport}
       mapStyle="mapbox://styles/tls2323/ck7vszf680xfr1ikboalcsuh2"
       mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_TOKEN}
-      onViewportChange={setViewport}>
+      onViewportChange={setViewport}
+      onDblClick={showAddMarkerPopup}
+    >
       {
         logEntries.map(entry => (
-          <>
+          <React.Fragment key={entry._id}>
             <Marker
-              key={entry._id}
               latitude={entry.latitude}
               longitude={entry.longitude}
               // offsetLeft={-20}
@@ -38,7 +52,7 @@ const App = () => {
             >
               <div
                 onClick={() => setShowPopup({
-                  ...showPopup,
+                  // ...showPopup,
                   [entry._id]: true,
                 })}
               >
@@ -78,20 +92,63 @@ const App = () => {
                   longitude={entry.longitude}
                   closeButton={true}
                   closeOnClick={true}
+                  dynamicPosition={true}
                   onClose={() => setShowPopup({
-                    ...showPopup,
-                    [entry._id]: false
+                    // ...showPopup,
+                    // [entry._id]: false
                   })}
                   anchor="top" >
-                  <div>
+                  <div className="popup">
                     <h3>{entry.title}</h3>
                     <h5>{entry.comments}</h5>
+                    <small>Visited on: {new Date(entry.visitDate).toLocaleDateString()}</small>
+                    {entry.image && <img src={entry.image} alt={entry.title} />}
                   </div>
                 </Popup>
               ) : null
             }
-          </>
+          </React.Fragment>
         ))
+      }
+      {/* double click event */}
+      {
+        addEntryLocation ? (
+          <>
+            <Marker
+              latitude={addEntryLocation.latitude}
+              longitude={addEntryLocation.longitude}
+            >
+              <div>
+                <img
+                  style={{
+                    height: `${0.04 * viewport.height}px`,
+                    width: `${0.04 * viewport.width}px`
+                  }}
+                  alt="marker"
+                  className="marker"
+                  src="https://i.imgur.com/y0G5YTX.png"
+                />
+              </div>
+            </Marker>
+          addEntryLocation ? (
+            <Popup
+              latitude={addEntryLocation.latitude}
+              longitude={addEntryLocation.longitude}
+              closeButton={true}
+              closeOnClick={false}
+              dynamicPosition={true}
+              onClose={() => setAddEntryLocation(null)}
+              anchor="top" >
+              <div className="popup">
+                <LogEntryForm onClose={() => {
+                  setAddEntryLocation(null);
+                  getEntries();
+                }} location={addEntryLocation} />
+              </div>
+            </Popup>
+          ) : null
+          </>
+        ) : null
       }
     </ReactMapGL>
   );
